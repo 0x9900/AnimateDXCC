@@ -65,7 +65,7 @@ def mk_video(src, video_file):
   cmd = [FFMPEG, *in_args, *ou_args, video_file]
   logging.info("Saving %s video file", video_file)
   logging.info('Writing ffmpeg output in %s', logfile)
-  with open(logfile, "w", encoding='ascii') as err:
+  with open(logfile, "a", encoding='ascii') as err:
     err.write(' '.join(cmd))
     err.write('\n\n')
     err.flush()
