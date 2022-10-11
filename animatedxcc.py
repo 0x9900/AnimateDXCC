@@ -11,7 +11,8 @@ from subprocess import Popen, PIPE
 
 from datetime import datetime, timedelta
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
+                    datefmt='%H:%M:%S', level=logging.INFO)
 
 if os.uname().nodename.endswith('local'):
   SOURCE_DIR = '/Volumes/WDPassport/tmp/dxcc'
