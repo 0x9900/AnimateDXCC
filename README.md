@@ -19,3 +19,9 @@ optional arguments:
   -v VIDEO_DIR, --video-dir VIDEO_DIR
                         Directory to store the videos
 ```
+
+## Example
+
+To see an example go to [bsdworl.org][1] and click on any of the `DXCC` buttons at the bottom of the page.
+
+[1]: https://bsdworld.org/
