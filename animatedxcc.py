@@ -60,20 +60,25 @@ def cleanup(directory):
 
 def mk_video(src, video_file):
   logfile = '/tmp/newanim.log'
+  tmp_file = f"{video_file}-{os.getpid()}.mp4"
   input_files = os.path.join(src, 'dxcc-%05d.png')
   in_args = f'-y -framerate 14 -i {input_files}'.split()
   ou_args = '-c:v libx264 -pix_fmt yuv420p -vf scale=800:600'.split()
-  cmd = [FFMPEG, *in_args, *ou_args, video_file]
-  logging.info("Saving %s video file", video_file)
+  cmd = [FFMPEG, *in_args, *ou_args, tmp_file]
   logging.info('Writing ffmpeg output in %s', logfile)
+  logging.info("Saving %s video file", tmp_file)
   with open(logfile, "a", encoding='ascii') as err:
     err.write(' '.join(cmd))
     err.write('\n\n')
     err.flush()
     with Popen(cmd, shell=False, stdout=PIPE, stderr=err) as proc:
       proc.wait()
-      if proc.returncode != 0:
-        logging.error('Error generating the video file')
+    if proc.returncode != 0:
+      logging.error('Error generating the video file')
+      return
+    logging.info('mv %s %s', tmp_file, video_file)
+    os.rename(tmp_file, video_file)
+
 
 def main():
   parser = argparse.ArgumentParser(description='DXCC trafic animation')
