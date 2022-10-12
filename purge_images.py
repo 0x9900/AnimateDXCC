@@ -9,6 +9,14 @@ from datetime import datetime, timedelta
 
 DEFAULT_PATH = '/var/tmp/dxcc'
 
+if os.uname().nodename.endswith('local'):
+  DEFAULT_PATH = '/Volumes/WDPassport/tmp/dxcc'
+else:
+  DEFAULT_PATH = '/var/tmp/dxcc'
+
+logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
+                    datefmt='%H:%M:%S', level=logging.INFO)
+
 def select_files(path, end_date):
   match = re.compile(r'dxcc-\w{2}.*-(\d+).png')
   selected = []
@@ -49,13 +57,11 @@ def main():
     to_delete = select_files(path, end_date)
     for file in to_delete:
       if not opts.dry_run:
-        logger.info('Delete: "%s"', file)
+        logging.info('Delete: "%s"', file)
         os.unlink(file)
       else:
         logging.info('"%s" should be deleted', file)
 
 
 if __name__ == "__main__":
-  logging.basicConfig(level=logging.INFO)
-  logger = logging.getLogger(__name__)
   main()

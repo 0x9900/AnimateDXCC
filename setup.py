@@ -30,11 +30,15 @@ setup(
   license=__license__,
   author=__author__,
   author_email='w6bsd@bsdworld.org',
-  py_modules=['animatedxcc'],
+  py_modules=[
+    'animatedxcc',
+    'purge_images'
+  ],
   python_requires=">=3.9.0",
   entry_points = {
     'console_scripts': [
-      'animatedxcc = animatedxcc:main'
+      'animatedxcc = animatedxcc:main',
+      'purge_images = purge_images:main',
     ],
   },
   classifiers=[
