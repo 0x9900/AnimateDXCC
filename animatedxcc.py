@@ -62,7 +62,7 @@ def mk_video(src, video_file):
   logfile = '/tmp/newanim.log'
   tmp_file = f"{video_file}-{os.getpid()}.mp4"
   input_files = os.path.join(src, 'dxcc-%05d.png')
-  in_args = f'-y -framerate 14 -i {input_files}'.split()
+  in_args = f'-y -framerate 10 -i {input_files}'.split()
   ou_args = '-c:v libx264 -pix_fmt yuv420p -vf scale=800:600'.split()
   cmd = [FFMPEG, *in_args, *ou_args, tmp_file]
   logging.info('Writing ffmpeg output in %s', logfile)
