@@ -5,6 +5,7 @@ import argparse
 import logging
 import os
 import re
+import shutil
 import sys
 
 from subprocess import Popen, PIPE
@@ -17,11 +18,11 @@ logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(me
 if os.uname().nodename.endswith('local'):
   SOURCE_DIR = '/Volumes/WDPassport/tmp/dxcc'
   VIDEO_DIR = '/tmp'
-  FFMPEG = '/opt/local/bin/ffmpeg'
 else:
   SOURCE_DIR = '/var/tmp/dxcc'
   VIDEO_DIR = '/var/www/html'
-  FFMPEG = '/usr/bin/ffmpeg'
+
+FFMPEG = shutil.which('ffmpeg')
 
 RE_DATE = re.compile(r'^dxcc.*-\w{2}-(\d+)\..*').match
 
