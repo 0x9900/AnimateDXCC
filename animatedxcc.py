@@ -19,7 +19,7 @@ if os.uname().nodename.endswith('local'):
   SOURCE_DIR = '/Volumes/WDPassport/tmp/dxcc'
   VIDEO_DIR = '/tmp'
 else:
-  SOURCE_DIR = '/var/tmp/dxcc'
+  SOURCE_DIR = '/var/www/html/DXCC'
   VIDEO_DIR = '/var/www/html'
 
 FFMPEG = shutil.which('ffmpeg')
