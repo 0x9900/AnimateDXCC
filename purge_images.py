@@ -12,7 +12,7 @@ DEFAULT_PATH = '/var/tmp/dxcc'
 if os.uname().nodename.endswith('local'):
   DEFAULT_PATH = '/Volumes/WDPassport/tmp/dxcc'
 else:
-  DEFAULT_PATH = '/var/tmp/dxcc'
+  DEFAULT_PATH = '/var/www/html/DXCC'
 
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%H:%M:%S', level=logging.INFO)
