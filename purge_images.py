@@ -22,6 +22,8 @@ def select_files(path, end_date):
   selected = []
   files = sorted(os.listdir(path))
   for file in files:
+    if not file.startswith('dxcc-'):
+      continue
     mdate = match.match(file)
     if not mdate:
       logging.error('File "%s" matching error', file)
