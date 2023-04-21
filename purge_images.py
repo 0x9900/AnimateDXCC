@@ -48,7 +48,7 @@ def main():
         continue
       sdate = mdate.group(1)
       ddate = datetime.strptime(sdate, '%Y%m%d%H%M')
-      if ddate > end_date:
+      if ddate >= end_date:
         continue
 
       fullpath = os.path.join(topdir, name)
