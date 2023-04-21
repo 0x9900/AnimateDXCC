@@ -17,26 +17,14 @@ else:
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%H:%M:%S', level=logging.INFO)
 
-def select_files(path, end_date):
-  match = re.compile(r'dxcc-\w{2}.*-(\d+).png')
-  selected = []
-  files = sorted(os.listdir(path))
-  for file in files:
-    if not file.startswith('dxcc-'):
-      continue
-    mdate = match.match(file)
-    if not mdate:
-      logging.error('File "%s" matching error', file)
-      continue
-    sdate = mdate.group(1)
-    ddate = datetime.strptime(sdate, '%Y%m%d%H%M')
-    if ddate < end_date:
-      selected.append(os.path.join(path, file))
+def remove_file(filename):
+  try:
+    os.unlink(filename)
+  except IOError as err:
+    logging.error(err)
 
-  return selected
 
 def main():
-  continents = ("AF", "AS", "EU", "NA", "OC", "SA")
   parser = argparse.ArgumentParser(description="Purge old dxcc images")
   parser.add_argument('-n', '--dry-run', action="store_true", default=False,
                       help="Do not delete any file (dry run)")
@@ -44,25 +32,32 @@ def main():
                       help="Root path for dxcc images")
   parser.add_argument('-H', '--hours', default=96, type=int,
                       help='Number of hours to keep')
-  parser.add_argument('args', choices=continents, nargs="+",
-                      help='Purge files for the specified continent')
   opts = parser.parse_args()
 
-  for continent in opts.args:
-    path = os.path.join(opts.path, continent)
-    if not os.path.exists(path):
-      logging.warning("Path %s not found", path)
-      continue
+  logging.info('Scanning %s', opts.path)
+  end_date = datetime.utcnow() - timedelta(hours=opts.hours)
+  filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
 
-    logging.info('Scanning %s', path)
-    end_date = datetime.utcnow() - timedelta(hours=opts.hours)
-    to_delete = select_files(path, end_date)
-    for file in to_delete:
-      if not opts.dry_run:
-        logging.info('Delete: "%s"', file)
-        os.unlink(file)
-      else:
-        logging.info('"%s" should be deleted', file)
+  for topdir, dirname, files in os.walk(opts.path):
+    for name in files:
+      if not name.startswith('dxcc-'):
+        continue
+      mdate = filematch(name)
+      if not mdate:
+        logging.error('File "%s" matching error', name)
+        continue
+      sdate = mdate.group(1)
+      ddate = datetime.strptime(sdate, '%Y%m%d%H%M')
+      if ddate > end_date:
+        continue
+
+      fullpath = os.path.join(topdir, name)
+      if opts.dry_run:
+        logging.info('To delete: "%s"', filename)
+        continue
+
+      logging.info('Delete: "%s"', filename)
+      remove_file(fullpath)
 
 
 if __name__ == "__main__":
