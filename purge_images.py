@@ -53,10 +53,10 @@ def main():
 
       fullpath = os.path.join(topdir, name)
       if opts.dry_run:
-        logging.info('To delete: "%s"', filename)
+        logging.info('To delete: "%s"', fullpath)
         continue
 
-      logging.info('Delete: "%s"', filename)
+      logging.info('Delete: "%s"', fullpath)
       remove_file(fullpath)
 
 
