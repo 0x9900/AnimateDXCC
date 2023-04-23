@@ -24,7 +24,7 @@ else:
 
 FFMPEG = shutil.which('ffmpeg')
 
-RE_DATE = re.compile(r'^dxcc.*-\w{2}-(\d+)\..*').match
+RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+)\..*').match
 
 def parse_date(name):
   match = RE_DATE(name)
@@ -81,39 +81,53 @@ def mk_video(src, video_file):
     os.rename(tmp_file, video_file)
 
 
+def animate(start_date, source_dir, video_dir, video_file):
+  pid = os.getpid()
+  try:
+    work_dir = os.path.join(source_dir, f"workdir-{pid}")
+    os.mkdir(work_dir)
+
+    files = select_files(source_dir, start_date)
+    create_links(source_dir, work_dir, files)
+    mk_video(work_dir, video_file)
+  except KeyboardInterrupt:
+    logging.warning("^C pressed")
+    sys.exit(os.EX_SOFTWARE)
+  finally:
+    cleanup(work_dir)
+
+
 def main():
   parser = argparse.ArgumentParser(description='DXCC trafic animation')
-  parser.add_argument('-c', '--continent', required=True, nargs="+",
+  parser.add_argument('-c', '--continent', nargs="+",
                       choices=('AF', 'AS', 'EU', 'NA', 'OC', 'SA'))
+  parser.add_argument('-C', '--cqzone', type=int, nargs="+",
+                      help="CQ Zone numbers")
+  parser.add_argument('-I', '--ituzone', type=int, nargs="+",
+                      help="ITU Zone numbers")
   parser.add_argument('-H', '--hours', default=120, type=int,
                       help='Number of hours to animate [Default: %(default)s]')
   parser.add_argument('-v', '--video-dir', help='Directory to store the videos')
   opts = parser.parse_args()
 
+  video_dir = VIDEO_DIR if not opts.video_dir else opts.video_dir
+  if not os.path.isdir(video_dir):
+    logging.error('the video directory "%s" does not exist', video_dir)
+    sys.exit(os.EX_IOERR)
+
   start_date = datetime.utcnow() - timedelta(hours=opts.hours)
 
-  for continent in opts.continent:
-    logging.info("Processing: %s, %d hours", continent, opts.hours)
-    video_dir = VIDEO_DIR if not opts.video_dir else opts.video_dir
-    source_dir = os.path.join(SOURCE_DIR, continent)
-    video_file = os.path.join(video_dir, f'dxcc-{continent}.mp4')
-    if not os.path.isdir(video_dir):
-      logging.error('the video directory "%s" does not exist', video_dir)
-      sys.exit(os.EX_IOERR)
+  for zone_type in ("continent", "cqzone", "ituzone"):
+    zones = getattr(opts, zone_type)
+    if not zones:
+      continue
+    for zone_name in zones:
+      zone_name = str(zone_name)
+      logging.info("Processing: %s %s, %d hours", zone_type, zone_name, opts.hours)
+      source_dir = os.path.join(SOURCE_DIR, zone_type, zone_name)
+      video_file = os.path.join(video_dir, f'dxcc-{zone_name}.mp4')
+      animate(start_date, source_dir, video_dir, video_file)
 
-    pid = os.getpid()
-    try:
-      work_dir = os.path.join(source_dir, f"workdir-{pid}")
-      os.mkdir(work_dir)
-
-      files = select_files(source_dir, start_date)
-      create_links(source_dir, work_dir, files)
-      mk_video(work_dir, video_file)
-    except KeyboardInterrupt:
-      logging.warning("^C pressed")
-      sys.exit(os.EX_SOFTWARE)
-    finally:
-      cleanup(work_dir)
 
 if __name__ == "__main__":
   sys.exit(main())
