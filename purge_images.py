@@ -7,6 +7,7 @@ import re
 
 from datetime import datetime, timedelta
 
+DEFAULT_KEEP = 7 * 24           # Keep images for 7 days.
 DEFAULT_PATH = '/var/tmp/dxcc'
 
 if os.uname().nodename.endswith('local'):
@@ -30,7 +31,7 @@ def main():
                       help="Do not delete any file (dry run)")
   parser.add_argument('-p', '--path', default=DEFAULT_PATH,
                       help="Root path for dxcc images")
-  parser.add_argument('-H', '--hours', default=96, type=int,
+  parser.add_argument('-H', '--hours', default=DEFAULT_KEEP, type=int,
                       help='Number of hours to keep')
   opts = parser.parse_args()
 
