@@ -30,9 +30,9 @@ def main():
   parser.add_argument('-n', '--dry-run', action="store_true", default=False,
                       help="Do not delete any file (dry run)")
   parser.add_argument('-p', '--path', default=DEFAULT_PATH,
-                      help="Root path for dxcc images")
+                      help="Root path for dxcc images [default: %(default)s]")
   parser.add_argument('-H', '--hours', default=DEFAULT_KEEP, type=int,
-                      help='Number of hours to keep')
+                      help='Number of hours to keep [default: %(default)d hours]')
   opts = parser.parse_args()
 
   logging.info('Scanning %s', opts.path)
