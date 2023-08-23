@@ -32,7 +32,8 @@ setup(
   author_email='w6bsd@bsdworld.org',
   py_modules=[
     'animatedxcc',
-    'purge_images'
+    'purge_images',
+    'stitch',
   ],
   python_requires=">=3.9.0",
   entry_points = {
