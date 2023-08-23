@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from PIL import Image
 
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
-                    datefmt='%H:%M:%S', level=logging.INFO)
+                    datefmt='%x %X', level=logging.INFO)
 
 
 try:
@@ -54,6 +54,7 @@ def mk_thumbnails(path, workdir, size=(240, 160)):
     image.save(tn_name)
     thumbnail_names.append(tn_name)
   return thumbnail_names
+
 
 def rm_workdir(path):
   workdir = os.path.join(path, f'workdir-{os.getpid()}')
