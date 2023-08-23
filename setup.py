@@ -39,6 +39,7 @@ setup(
     'console_scripts': [
       'animatedxcc = animatedxcc:main',
       'purge_images = purge_images:main',
+      'stitch = stitch:main',
     ],
   },
   classifiers=[
