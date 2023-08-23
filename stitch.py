@@ -15,6 +15,13 @@ from PIL import Image
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%H:%M:%S', level=logging.INFO)
 
+
+try:
+  RESAMPLING = Image.Resampling.LANCZOS
+except AttributeError:
+  RESAMPLING = Image.LANCZOS
+
+
 def stitch_thumbnails(thumbnails, cols, rows, output_size):
   total_width = cols * output_size[0]
   total_height = rows * output_size[1]
@@ -26,7 +33,7 @@ def stitch_thumbnails(thumbnails, cols, rows, output_size):
     if index >= len(thumbnails):
       break
     thumbnail = Image.open(thumbnails[index])
-    thumbnail = thumbnail.resize(output_size, Image.Resampling.LANCZOS)
+    thumbnail = thumbnail.resize(output_size, RESAMPLING)
     canvas.paste(thumbnail, (j * output_size[0], i * output_size[1]))
 
   return canvas
