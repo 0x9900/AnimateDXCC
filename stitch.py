@@ -105,8 +105,9 @@ def mk_workdir(path):
 
 
 def main():
-  parser = argparse.ArgumentParser(description='Stitch band activity into a canvas')
-  parser.add_argument('-p', '--path', required=True, help='Directory containing activity images')
+  parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
+  parser.add_argument('-p', '--path', required=True,
+                      help='Directory containing the propagation graphs images')
   opts = parser.parse_args()
 
   if not os.path.exists(opts.path):
