@@ -32,7 +32,7 @@ def mk_overlay(image):
   font_f = ImageFont.truetype(os.path.join(home, 'JetBrainsMono-MediumItalic.ttf'), 12)
 
   yesterday = date.today() - timedelta(days=1)
-  title = f'Hourly overvew of HF propagation for {yesterday}'
+  title = f'Hourly overview of HF propagation for {yesterday}'
   author = f'(c){yesterday.year} W6BSD https://bsdworld.org/'
 
   width, height = image.size
