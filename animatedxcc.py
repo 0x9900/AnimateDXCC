@@ -54,7 +54,7 @@ def create_links(source_dir, target_dir, file_list):
   if not file_list:
     return
   for idx, name in enumerate(file_list):
-    target = os.path.join(target_dir, f"dxcc-{idx:05d}.png")
+    target = os.path.join(target_dir, f"tmpdxcc-{idx:05d}.png")
     source = os.path.join(source_dir, name)
     os.link(source, target)
     logging.debug('Target file: %s', target)
@@ -68,7 +68,7 @@ def cleanup(directory):
 def mk_video(src, video_file):
   logfile = '/tmp/newanim.log'
   tmp_file = f"{video_file}-{os.getpid()}.mp4"
-  input_files = os.path.join(src, 'dxcc-%05d.png')
+  input_files = os.path.join(src, 'tmpdxcc-%05d.png')
   in_args = f'-y -framerate 10 -i {input_files}'.split()
   ou_args = '-c:v libx264 -pix_fmt yuv420p -vf scale=800:600'.split()
   cmd = [FFMPEG, *in_args, *ou_args, tmp_file]
