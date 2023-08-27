@@ -7,8 +7,8 @@
 #
 #
 #
-
 import argparse
+import atexit
 import logging
 import os
 import re
@@ -92,6 +92,7 @@ def animate(start_date, source_dir, video_dir, video_file):
   try:
     work_dir = os.path.join(source_dir, f"workdir-{pid}")
     os.mkdir(work_dir)
+    atexit.register(cleanup, work_dir)
 
     files = select_files(source_dir, start_date)
     create_links(source_dir, work_dir, files)
@@ -100,6 +101,7 @@ def animate(start_date, source_dir, video_dir, video_file):
     logging.warning("^C pressed")
     sys.exit(os.EX_SOFTWARE)
   finally:
+    atexit.unregister(cleanup)
     cleanup(work_dir)
 
 

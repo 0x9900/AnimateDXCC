@@ -20,6 +20,9 @@ logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(me
 
 OFFSET = 40
 FOOTER = 40
+COLUMNS = 4
+ROWS = 6
+OUTPUT_SIZE = (360, 240)
 
 try:
   RESAMPLING = Image.Resampling.LANCZOS
@@ -72,7 +75,7 @@ def add_margin(image, left=40, top=50, color='#ffffff'):
   return result
 
 
-def mk_thumbnails(path, workdir, size=(240, 160)):
+def mk_thumbnails(path, workdir, size):
   # We only use the top of the hour files
   yesterday = (date.today() - timedelta(days=1)).strftime('%Y%m%d')
   _re = re.compile(r'dxcc-.*-' + yesterday + r'\d+00.png')
@@ -86,6 +89,7 @@ def mk_thumbnails(path, workdir, size=(240, 160)):
     image.thumbnail(size)
     image.save(tn_name)
     thumbnail_names.append(tn_name)
+
   return thumbnail_names
 
 
@@ -104,8 +108,25 @@ def mk_workdir(path):
   return workdir
 
 
+def type_tns(parg):
+  size = []
+  _size = parg.lower().split('x')
+  for val in _size:
+    if not val.isdigit():
+      raise argparse.ArgumentTypeError
+    size.append(int(val))
+  return tuple(size)
+
 def main():
+
+  default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
+  parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
+                      help='Number of columns [default: %(default)d]')
+  parser.add_argument('-r', '--rows', type=int, default=ROWS,
+                      help='Numer of rows [default %(default)d]')
+  parser.add_argument('-S', '--thumbnails-size', type=type_tns, default=default_size,
+                      help='Thumbnails size width x height [default %(default)r]')
   parser.add_argument('-p', '--path', required=True,
                       help='Directory containing the propagation graphs images')
   opts = parser.parse_args()
@@ -116,14 +137,9 @@ def main():
 
   workdir = mk_workdir(opts.path)
   atexit.register(rm_workdir, opts.path)
+  thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size)
 
-  thumbnails = mk_thumbnails(opts.path, workdir)
-
-  cols = 4
-  rows = 6
-  output_size = (240, 160)
-
-  canvas = stitch_thumbnails(thumbnails, cols, rows, output_size)
+  canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size)
   for ext in ('.png', '.webp'):
     canvas_name = os.path.join(opts.path, 'canvas' + ext)
     canvas.save(canvas_name, quality=100)
