@@ -121,13 +121,20 @@ def type_tns(parg):
   return tuple(size)
 
 def type_day(parg):
-  day = datetime.strptime(parg, '%Y%m%d')
+  if parg.lower() == 'today':
+    day = date.today()
+  elif parg.lower() == 'yesterday':
+    day = date.today() - timedelta(days=1)
+  else:
+    day = datetime.strptime(parg, '%Y%m%d')
   return day
 
 def main():
   yesterday = date.today() - timedelta(days=1)
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
+  parser.add_argument('-o', '--output-name', default='canvas',
+                      help='Output image name (without the extension) [default: %(default)s]')
   parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
                       help='Number of columns [default: %(default)d]')
   parser.add_argument('-r', '--rows', type=int, default=ROWS,
@@ -137,7 +144,7 @@ def main():
   parser.add_argument('-p', '--path', required=True,
                       help='Directory containing the propagation graphs images')
   parser.add_argument('-d', '--day', default=yesterday, type=type_day,
-                      help='Date')
+                      help='Date format is "YYYYMMDD" as well as "today" or "yesterday"')
   opts = parser.parse_args()
 
   if not os.path.exists(opts.path):
@@ -150,7 +157,7 @@ def main():
   thumbnails.sort()
   canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day)
   for ext in ('.png', '.webp'):
-    canvas_name = os.path.join(opts.path, 'canvas' + ext)
+    canvas_name = os.path.join(opts.path, opts.output_name + ext)
     canvas.save(canvas_name, quality=100)
     logging.info(canvas_name)
 
