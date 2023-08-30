@@ -87,7 +87,7 @@ def mk_thumbnails(path, workdir, size, day):
     if not _re.match(name):
       continue
     tn_name = os.path.join(workdir, name)
-    logging.info('New thumbnail: %s', tn_name)
+    logging.debug('New thumbnail: %s', tn_name)
     image = Image.open(os.path.join(path, name))
     image.thumbnail(size)
     image.save(tn_name)
