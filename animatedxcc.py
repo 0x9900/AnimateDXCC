@@ -22,7 +22,7 @@ logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(me
                     datefmt='%x %X', level=logging.INFO)
 
 if os.uname().nodename.endswith('local'):
-  SOURCE_DIR = '/Volumes/WDPassport/tmp/dxcc'
+  SOURCE_DIR = '/Volumes/WDPassport/tmp/DXCC'
   VIDEO_DIR = '/tmp'
 else:
   SOURCE_DIR = '/var/www/html/DXCC'

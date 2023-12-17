@@ -130,7 +130,6 @@ def type_day(parg):
   return day
 
 def main():
-  yesterday = date.today() - timedelta(days=1)
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
   parser.add_argument('-o', '--output-name', default='canvas',
@@ -143,7 +142,7 @@ def main():
                       help='Thumbnails size width x height [default %(default)r]')
   parser.add_argument('-p', '--path', required=True,
                       help='Directory containing the propagation graphs images')
-  parser.add_argument('-d', '--day', default=yesterday, type=type_day,
+  parser.add_argument('-d', '--day', default='yesterday', type=type_day,
                       help='Date format is "YYYYMMDD" as well as "today" or "yesterday"')
   opts = parser.parse_args()
 
