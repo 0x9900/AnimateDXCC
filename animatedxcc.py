@@ -16,7 +16,7 @@ import shutil
 import sys
 
 from subprocess import Popen, PIPE
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%x %X', level=logging.INFO)
@@ -87,7 +87,7 @@ def mk_video(src, video_file):
     os.rename(tmp_file, video_file)
 
 
-def animate(start_date, source_dir, video_dir, video_file):
+def animate(start_date, source_dir, video_file):
   pid = os.getpid()
   try:
     work_dir = os.path.join(source_dir, f"workdir-{pid}")
@@ -123,7 +123,7 @@ def main():
     logging.error('the video directory "%s" does not exist', video_dir)
     sys.exit(os.EX_IOERR)
 
-  start_date = datetime.utcnow() - timedelta(hours=opts.hours)
+  start_date = datetime.now(timezone.utc) - timedelta(hours=opts.hours)
 
   for zone_type in ("continent", "cqzone", "ituzone"):
     zones = getattr(opts, zone_type)
@@ -134,7 +134,7 @@ def main():
       logging.info("Processing: %s %s, %d hours", zone_type, zone_name, opts.hours)
       source_dir = os.path.join(SOURCE_DIR, zone_type, zone_name)
       video_file = os.path.join(video_dir, f'dxcc-{zone_name}.mp4')
-      animate(start_date, source_dir, video_dir, video_file)
+      animate(start_date, source_dir, video_file)
 
 
 if __name__ == "__main__":

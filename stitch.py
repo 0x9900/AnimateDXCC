@@ -129,6 +129,7 @@ def type_day(parg):
     day = datetime.strptime(parg, '%Y%m%d')
   return day
 
+
 def main():
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')

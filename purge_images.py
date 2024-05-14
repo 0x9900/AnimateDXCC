@@ -39,7 +39,7 @@ def main():
   end_date = datetime.utcnow() - timedelta(hours=opts.hours)
   filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
 
-  for topdir, dirname, files in os.walk(opts.path):
+  for topdir, _, files in os.walk(opts.path):
     for name in files:
       if not name.startswith('dxcc-'):
         continue
