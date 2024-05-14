@@ -36,7 +36,8 @@ def parse_date(name):
   match = RE_DATE(name)
   if not match:
     return None
-  return datetime.strptime(match.group(1), '%Y%m%d%H%M')
+  date = datetime.strptime(match.group(1), '%Y%m%d%H%M')
+  return date.replace(tzinfo=timezone.utc)
 
 def select_files(source_dir, start_date=False):
   file_list = []
