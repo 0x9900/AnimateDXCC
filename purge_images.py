@@ -49,6 +49,7 @@ def main():
         continue
       sdate = mdate.group(1)
       ddate = datetime.strptime(sdate, '%Y%m%d%H%M')
+      ddate = ddate.replace(tzinfo=timezone.utc)
       if ddate >= end_date:
         continue
 
