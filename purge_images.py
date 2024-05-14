@@ -5,7 +5,7 @@ import logging
 import os
 import re
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 DEFAULT_KEEP = 7 * 24           # Keep images for 7 days.
 DEFAULT_PATH = '/var/tmp/dxcc'
@@ -36,7 +36,7 @@ def main():
   opts = parser.parse_args()
 
   logging.info('Scanning %s', opts.path)
-  end_date = datetime.utcnow() - timedelta(hours=opts.hours)
+  end_date = datetime.now(timezone.utc) - timedelta(hours=opts.hours)
   filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
 
   for topdir, _, files in os.walk(opts.path):
