@@ -4,19 +4,12 @@ import argparse
 import logging
 import os
 import re
+import sys
 
 from datetime import datetime, timedelta, timezone
 
 DEFAULT_KEEP = 7 * 24           # Keep images for 7 days.
 DEFAULT_PATH = '/var/tmp/dxcc'
-
-if os.uname().nodename.endswith('local'):
-  DEFAULT_PATH = '/Volumes/WDPassport/tmp/dxcc'
-else:
-  DEFAULT_PATH = '/var/www/html/DXCC'
-
-logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
-                    datefmt='%H:%M:%S', level=logging.INFO)
 
 def remove_file(filename):
   try:
@@ -26,6 +19,12 @@ def remove_file(filename):
 
 
 def main():
+  log_file = None if os.isatty(sys.stdout.fileno()) else '/tmp/purge_images.log'
+  logging.basicConfig(
+    format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
+    level=logging.getLevelName(os.getenv('LOG_LEVEL', 'INFO')),
+    filename=log_file
+  )
   parser = argparse.ArgumentParser(description="Purge old dxcc images")
   parser.add_argument('-n', '--dry-run', action="store_true", default=False,
                       help="Do not delete any file (dry run)")
