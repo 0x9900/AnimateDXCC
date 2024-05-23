@@ -18,6 +18,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint isort flake8 pre-commit
+        pip install PIL
     - name: Checking imports
       continue-on-error: false
       run: |
