@@ -34,6 +34,7 @@
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "pre-commit",
     "ipdb",
     "flake8",
@@ -47,9 +48,9 @@ dev = [
   Tracker = "https://github.com/0x9900/animatedxcc/issues"
 
 [project.scripts]
-  animatedrap = "animdxcc:main"
-  purge_drap = "animdxcc.purge_drap:main"
-  stitck = "animdxcc.stitch:main"
+  animatedxcc = "animdxcc.animatedxcc:main"
+  purge_images = "animdxcc.purge_images:main"
+  stitch = "animdxcc.stitch:main"
 
 [tool.setuptools.packages.find]
     include = ["animdxcc*"]

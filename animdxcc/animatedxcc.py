@@ -20,13 +20,6 @@ from subprocess import PIPE, Popen
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%x %X', level=logging.INFO)
 
-if os.uname().nodename.endswith('local'):
-  SOURCE_DIR = '/Volumes/WDPassport/tmp/DXCC'
-  VIDEO_DIR = '/tmp'
-else:
-  SOURCE_DIR = '/var/www/html/DXCC'
-  VIDEO_DIR = '/var/www/html'
-
 FFMPEG = shutil.which('ffmpeg')
 
 RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+)\..*').match
@@ -120,12 +113,14 @@ def main():
                       help="ITU Zone numbers")
   parser.add_argument('-H', '--hours', default=120, type=int,
                       help='Number of hours to animate [Default: %(default)s]')
-  parser.add_argument('-v', '--video-dir', help='Directory to store the videos')
+  parser.add_argument('-s', '--source', default='/var/tmp/dxcc',
+                      help='Directory where the images are located')
+  parser.add_argument('-v', '--video-dir', default='/tmp',
+                      help='Directory to store the videos')
   opts = parser.parse_args()
 
-  video_dir = VIDEO_DIR if not opts.video_dir else opts.video_dir
-  if not os.path.isdir(video_dir):
-    logging.error('the video directory "%s" does not exist', video_dir)
+  if not os.path.isdir(opts.video_dir):
+    logging.error('the video directory "%s" does not exist', opts.video_dir)
     sys.exit(os.EX_IOERR)
 
   start_date = datetime.now(timezone.utc) - timedelta(hours=opts.hours)
@@ -137,8 +132,8 @@ def main():
     for zone_name in zones:
       zone_name = str(zone_name)
       logging.info("Processing: %s %s, %d hours", zone_type, zone_name, opts.hours)
-      source_dir = os.path.join(SOURCE_DIR, zone_type, zone_name)
-      video_file = os.path.join(video_dir, f'dxcc-{zone_name}.mp4')
+      source_dir = os.path.join(opts.source, zone_type, zone_name)
+      video_file = os.path.join(opts.video_dir, f'dxcc-{zone_name}.mp4')
       animate(start_date, source_dir, video_file)
 
 
