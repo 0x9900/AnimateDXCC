@@ -14,9 +14,8 @@ import os
 import re
 import shutil
 import sys
-
-from subprocess import Popen, PIPE
 from datetime import datetime, timedelta, timezone
+from subprocess import PIPE, Popen
 
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%x %X', level=logging.INFO)
@@ -32,12 +31,14 @@ FFMPEG = shutil.which('ffmpeg')
 
 RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+)\..*').match
 
+
 def parse_date(name):
   match = RE_DATE(name)
   if not match:
     return None
   date = datetime.strptime(match.group(1), '%Y%m%d%H%M')
   return date.replace(tzinfo=timezone.utc)
+
 
 def select_files(source_dir, start_date=False):
   file_list = []
@@ -50,6 +51,7 @@ def select_files(source_dir, start_date=False):
   logging.info('%d files selected for animation', len(file_list))
   return file_list
 
+
 def create_links(source_dir, target_dir, file_list):
   logging.info('Creating workspace %s', target_dir)
   if not file_list:
@@ -60,11 +62,13 @@ def create_links(source_dir, target_dir, file_list):
     os.link(source, target)
     logging.debug('Target file: %s', target)
 
+
 def cleanup(directory):
   for name in os.listdir(directory):
     os.unlink(os.path.join(directory, name))
   os.rmdir(directory)
   logging.info('Working directory "%s" removed', directory)
+
 
 def mk_video(src, video_file):
   logfile = '/tmp/newanim.log'

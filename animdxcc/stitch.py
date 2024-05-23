@@ -7,13 +7,10 @@ import logging
 import os
 import re
 import sys
-
-from itertools import product
 from datetime import date, datetime, timedelta
+from itertools import product
 
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
                     datefmt='%x %X', level=logging.INFO)
@@ -28,6 +25,7 @@ try:
   RESAMPLING = Image.Resampling.LANCZOS
 except AttributeError:
   RESAMPLING = Image.LANCZOS    # pylint: disable=no-member
+
 
 def mk_overlay(image, day):
   home = os.path.dirname(sys.argv[0])
@@ -119,6 +117,7 @@ def type_tns(parg):
       raise argparse.ArgumentTypeError
     size.append(int(val))
   return tuple(size)
+
 
 def type_day(parg):
   if parg.lower() == 'today':
