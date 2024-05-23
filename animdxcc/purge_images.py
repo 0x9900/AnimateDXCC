@@ -12,7 +12,7 @@ DEFAULT_KEEP = 7 * 24           # Keep images for 7 days.
 DEFAULT_PATH = '/var/tmp/dxcc'
 
 
-def purge_files(src_path, hours, dry_run=False):
+def purge_files(src_path: pathlib.Path, hours: int, dry_run: bool = False) -> None:
   start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
   filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
   for filepath in src_path.glob('**/dxcc-*.png'):
@@ -31,14 +31,14 @@ def purge_files(src_path, hours, dry_run=False):
     filepath.unlink()
 
 
-def type_path(arg):
+def type_path(arg: str) -> pathlib.Path:
   path = pathlib.Path(arg)
   if not path.is_dir():
     raise argparse.ArgumentTypeError(f'Error reading the directory "{arg}"')
   return path
 
 
-def main():
+def main() -> None:
   log_file = None if os.isatty(sys.stdout.fileno()) else '/tmp/purge_images.log'
   logging.basicConfig(
     format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
