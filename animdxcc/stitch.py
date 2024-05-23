@@ -8,6 +8,7 @@ import os
 import re
 import sys
 from datetime import date, datetime, timedelta
+from importlib.resources import files
 from itertools import product
 
 from PIL import Image, ImageDraw, ImageFont
@@ -28,9 +29,12 @@ except AttributeError:
 
 
 def mk_overlay(image, day):
-  home = os.path.dirname(sys.argv[0])
-  font_t = ImageFont.truetype(os.path.join(home, 'JetBrainsMono-Bold.ttf'), 18)
-  font_f = ImageFont.truetype(os.path.join(home, 'JetBrainsMono-MediumItalic.ttf'), 12)
+  fontpath = files('animdxcc')
+  font_t_path = fontpath.joinpath('JetBrainsMono-Bold.ttf')
+  font_f_path = fontpath.joinpath('JetBrainsMono-MediumItalic.ttf')
+
+  font_t = ImageFont.truetype(font_t_path.open('rb'), 18)
+  font_f = ImageFont.truetype(font_f_path.open('rb'), 12)
 
   title = f'Hourly overview of HF propagation for {day}'
   author = f'(c){day.year} W6BSD https://bsdworld.org/'

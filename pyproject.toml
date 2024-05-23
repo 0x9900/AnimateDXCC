@@ -55,4 +55,6 @@ dev = [
 [tool.setuptools.packages.find]
     include = ["animdxcc*"]
 
+[tool.setuptools.package-data]
+    "*" = ["*.ttf"]
 #
