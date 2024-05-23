@@ -56,5 +56,5 @@ dev = [
     include = ["animdxcc*"]
 
 [tool.setuptools.package-data]
-    "animatedxcc" = ["*.ttf"]
+    "*" = ["*.ttf"]
 #
