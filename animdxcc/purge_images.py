@@ -15,21 +15,20 @@ DEFAULT_PATH = '/var/tmp/dxcc'
 def purge_files(src_path, hours, dry_run=False):
   start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
   filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
-  for path, _, files in src_path.walk():
-    for name in files:
-      if not (fmatch := filematch(name)):
-        continue
-      date = datetime.strptime(fmatch.group(1), '%Y%m%d%H%M')
-      date = date.replace(tzinfo=timezone.utc)
-      if date >= start_date:
-        logging.debug('Keep file: %s', path)
-        continue
-      fullname = path.joinpath(name)
-      if dry_run:
-        logging.info('File "%s" will be purged', fullname)
-        continue
-      logging.info('Purge file "%s"',  fullname)
-      fullname.unlink()
+  for filepath in src_path.glob('**/dxcc-*.png'):
+    name = filepath.name
+    if not (fmatch := filematch(name)):
+      continue
+    date = datetime.strptime(fmatch.group(1), '%Y%m%d%H%M')
+    date = date.replace(tzinfo=timezone.utc)
+    if date >= start_date:
+      logging.debug('Keep file: %s', filepath)
+      continue
+    if dry_run:
+      logging.info('File "%s" will be purged', filepath)
+      continue
+    logging.info('Purge file "%s"',  filepath)
+    filepath.unlink()
 
 
 def type_path(arg):
