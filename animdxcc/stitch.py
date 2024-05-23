@@ -30,8 +30,8 @@ except AttributeError:
 
 def mk_overlay(image, day):
   fontpath = files('animdxcc')
-  font_t = ImageFont.truetype(fontpath.joinpath('JetBrainsMono-Bold.ttf'), 18)
-  font_f = ImageFont.truetype(fontpath.joinpath('JetBrainsMono-MediumItalic.ttf'), 12)
+  font_t = ImageFont.truetype(str(fontpath.joinpath('JetBrainsMono-Bold.ttf')), 18)
+  font_f = ImageFont.truetype(str(fontpath.joinpath('JetBrainsMono-MediumItalic.ttf')), 12)
 
   title = f'Hourly overview of HF propagation for {day}'
   author = f'(c){day.year} W6BSD https://bsdworld.org/'
