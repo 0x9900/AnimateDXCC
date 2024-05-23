@@ -33,8 +33,8 @@ def mk_overlay(image, day):
   font_t_path = fontpath.joinpath('JetBrainsMono-Bold.ttf')
   font_f_path = fontpath.joinpath('JetBrainsMono-MediumItalic.ttf')
 
-  font_t = ImageFont.truetype(font_t_path.read_bytes(), 18)
-  font_f = ImageFont.truetype(font_f_path.read_bytes(), 12)
+  font_t = ImageFont.truetype(font_t_path.open('rb'), 18)
+  font_f = ImageFont.truetype(font_f_path.open('rb'), 12)
 
   title = f'Hourly overview of HF propagation for {day}'
   author = f'(c){day.year} W6BSD https://bsdworld.org/'
