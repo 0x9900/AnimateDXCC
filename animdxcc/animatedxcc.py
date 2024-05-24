@@ -46,7 +46,7 @@ def select_files(source_dir: Path, workdir: Path,  start_date: datetime):
     if file_date and file_date > start_date:
       target = workdir.joinpath(f'dxcc-{next(count)}.png')
       target.hardlink_to(fullname)
-      logging.info('Selecting file %s', fullname.name)
+      logging.debug('Selecting file %s', fullname.name)
 
 
 def cleanup(workdir: Path) -> None:
