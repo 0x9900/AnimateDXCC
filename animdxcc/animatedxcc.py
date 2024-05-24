@@ -144,7 +144,7 @@ def main():
         select_files(source_dir, work_dir, start_date)
       except IOError as err:
         logging.error(err)
-        raise SystemExit('Error')
+        raise SystemExit('Error') from None
       mk_video(work_dir, video_file)
       cleanup(work_dir)
 

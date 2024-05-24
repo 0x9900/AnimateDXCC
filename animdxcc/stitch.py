@@ -22,10 +22,7 @@ COLUMNS = 4
 ROWS = 6
 OUTPUT_SIZE = (360, 240)
 
-try:
-  RESAMPLING = Image.Resampling.LANCZOS
-except AttributeError:
-  RESAMPLING = Image.LANCZOS    # pylint: disable=no-member
+RESAMPLING = Image.Resampling.LANCZOS
 
 
 def mk_overlay(image, day):
