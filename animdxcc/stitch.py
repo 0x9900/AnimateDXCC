@@ -4,12 +4,11 @@
 import argparse
 import atexit
 import logging
-import os
 import re
-import sys
 from datetime import date, datetime, timedelta
 from importlib.resources import files
 from itertools import product
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -82,12 +81,12 @@ def mk_thumbnails(path, workdir, size, day):
 
   _re = re.compile(r'dxcc-.*-' + day + r'\d+00.png')
   thumbnail_names = []
-  for name in os.listdir(path):
-    if not _re.match(name):
+  for fname in path.iterdir():
+    if not _re.match(fname.name):
       continue
-    tn_name = os.path.join(workdir, name)
+    tn_name = workdir.joinpath(fname.name)
     logging.debug('New thumbnail: %s', tn_name)
-    image = Image.open(os.path.join(path, name))
+    image = Image.open(fname)
     image.thumbnail(size)
     image.save(tn_name)
     thumbnail_names.append(tn_name)
@@ -95,17 +94,16 @@ def mk_thumbnails(path, workdir, size, day):
   return thumbnail_names
 
 
-def rm_workdir(path):
-  workdir = os.path.join(path, f'workdir-{os.getpid()}')
-  for name in os.listdir(workdir):
-    os.unlink(os.path.join(workdir, name))
-  os.rmdir(workdir)
-  logging.info('Working directory "%s" removed', workdir)
+def cleanup(path):
+  for fname in path.iterdir():
+    fname.unlink()
+  path.rmdir()
+  logging.info('Working directory "%s" removed', path)
 
 
 def mk_workdir(path):
-  workdir = os.path.join(path, f'workdir-{os.getpid()}')
-  os.mkdir(workdir)
+  workdir = path.joinpath('-workdir')
+  workdir.mkdir()
   logging.info('Work directory %s created', workdir)
   return workdir
 
@@ -133,7 +131,7 @@ def type_day(parg):
 def main():
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
-  parser.add_argument('-o', '--output-name', default='canvas',
+  parser.add_argument('-o', '--output-name', nargs='*', default=['canvas.png'], type=Path,
                       help='Output image name (without the extension) [default: %(default)s]')
   parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
                       help='Number of columns [default: %(default)d]')
@@ -141,25 +139,27 @@ def main():
                       help='Numer of rows [default %(default)d]')
   parser.add_argument('-S', '--thumbnails-size', type=type_tns, default=default_size,
                       help='Thumbnails size width x height [default %(default)r]')
-  parser.add_argument('-p', '--path', required=True,
+  parser.add_argument('-p', '--path', required=True, type=Path,
                       help='Directory containing the propagation graphs images')
   parser.add_argument('-d', '--day', default='yesterday', type=type_day,
                       help='Date format is "YYYYMMDD" as well as "today" or "yesterday"')
   opts = parser.parse_args()
 
-  if not os.path.exists(opts.path):
+  if not opts.path.exists():
     logging.error('%s Not Found', opts.path)
-    sys.exit(os.EX_IOERR)
+    raise SystemExit('Path ERROR')
 
   workdir = mk_workdir(opts.path)
-  atexit.register(rm_workdir, opts.path)
+  atexit.register(cleanup, workdir)
   thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day)
   thumbnails.sort()
   canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day)
-  for ext in ('.png', '.webp'):
-    canvas_name = os.path.join(opts.path, opts.output_name + ext)
-    canvas.save(canvas_name, quality=100)
-    logging.info(canvas_name)
+  for canvas_name in (opts.path.joinpath(f) for f in opts.output_name):
+    try:
+      canvas.save(canvas_name, quality=100)
+      logging.info(canvas_name)
+    except ValueError as err:
+      logging.error(err)
 
 
 if __name__ == '__main__':
