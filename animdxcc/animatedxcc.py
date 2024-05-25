@@ -25,7 +25,7 @@ RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+)\..*').match
 def counter(start: int = 1) -> Iterator[str]:
   cnt = start
   while True:
-    yield f'{cnt:06}'
+    yield f'{cnt:06d}'
     cnt += 1
 
 
