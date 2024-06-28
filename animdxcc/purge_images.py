@@ -14,12 +14,12 @@ DEFAULT_PATH = '/var/tmp/dxcc'
 
 def purge_files(src_path: pathlib.Path, hours: int, dry_run: bool = False) -> None:
   start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
-  filematch = re.compile(r'dxcc-\w{2}.*-(\d+).png').match
+  filematch = re.compile(r'dxcc-\w{2}.*-(\d+T\d+).png').match
   for filepath in src_path.glob('**/dxcc-*.png'):
     name = filepath.name
     if not (fmatch := filematch(name)):
       continue
-    date = datetime.strptime(fmatch.group(1), '%Y%m%d%H%M')
+    date = datetime.strptime(fmatch.group(1), '%Y%m%dT%H%M%S')
     date = date.replace(tzinfo=timezone.utc)
     if date >= start_date:
       logging.debug('Keep file: %s', filepath)
