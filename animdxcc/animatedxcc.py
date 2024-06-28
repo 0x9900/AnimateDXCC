@@ -19,7 +19,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Iterator, Optional
 
-RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+)\..*').match
+RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+T\d+)\..*').match
 
 
 def counter(start: int = 1) -> Iterator[str]:
@@ -33,15 +33,13 @@ def parse_date(name: str) -> Optional[datetime]:
   match = RE_DATE(name)
   if not match:
     return None
-  date = datetime.strptime(match.group(1), '%Y%m%d%H%M')
+  date = datetime.strptime(match.group(1), '%Y%m%dT%H%M%S')
   return date.replace(tzinfo=timezone.utc)
 
 
 def select_files(source_dir: Path, workdir: Path,  start_date: datetime):
   count = counter()
   for fullname in sorted(source_dir.glob('dxcc-*.png')):
-    if not fullname.name.startswith('dxcc-'):
-      continue
     file_date = parse_date(fullname.name)
     if file_date and file_date > start_date:
       target = workdir.joinpath(f'dxcc-{next(count)}.png')
@@ -109,7 +107,7 @@ def main():
     filename=log_file
   )
 
-  parser = argparse.ArgumentParser(description='DXCC trafic animation')
+  parser = argparse.ArgumentParser(description='DXCC traffic animation')
   parser.add_argument('-c', '--continent', nargs="+",
                       choices=('AF', 'AS', 'EU', 'NA', 'OC', 'SA'))
   parser.add_argument('-C', '--cqzone', type=int, nargs="+",
