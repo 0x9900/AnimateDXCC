@@ -6,7 +6,6 @@ import atexit
 import logging
 import os
 import re
-import sys
 from datetime import date, datetime, timedelta
 from importlib.resources import files
 from itertools import product
@@ -128,11 +127,9 @@ def type_day(parg):
 
 
 def main():
-  log_file = None if os.isatty(sys.stdout.fileno()) else '/tmp/purge_images.log'
   logging.basicConfig(
     format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
     level=logging.getLevelName(os.getenv('LOG_LEVEL', 'INFO')),
-    filename=log_file
   )
   logging.getLogger('PIL').setLevel(logging.INFO)
 
