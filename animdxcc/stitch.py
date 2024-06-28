@@ -4,16 +4,15 @@
 import argparse
 import atexit
 import logging
+import os
 import re
+import sys
 from datetime import date, datetime, timedelta
 from importlib.resources import files
 from itertools import product
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
-
-logging.basicConfig(format='%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s',
-                    datefmt='%x %X', level=logging.INFO)
 
 OFFSET = 40
 FOOTER = 40
@@ -79,7 +78,7 @@ def mk_thumbnails(path, workdir, size, day):
   else:
     day = day.strftime('%Y%m%d')
 
-  _re = re.compile(r'dxcc-.*-' + day + r'\d+00.png')
+  _re = re.compile(rf'dxcc-.*-({day}+T\d+0000).png')
   thumbnail_names = []
   for fname in path.iterdir():
     if not _re.match(fname.name):
@@ -91,7 +90,7 @@ def mk_thumbnails(path, workdir, size, day):
     image.save(tn_name)
     thumbnail_names.append(tn_name)
 
-  return thumbnail_names
+  return sorted(thumbnail_names)
 
 
 def cleanup(path):
@@ -129,6 +128,14 @@ def type_day(parg):
 
 
 def main():
+  log_file = None if os.isatty(sys.stdout.fileno()) else '/tmp/purge_images.log'
+  logging.basicConfig(
+    format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
+    level=logging.getLevelName(os.getenv('LOG_LEVEL', 'INFO')),
+    filename=log_file
+  )
+  logging.getLogger('PIL').setLevel(logging.INFO)
+
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
   parser.add_argument('-o', '--output-name', nargs='*', default=['canvas.png'], type=Path,
