@@ -19,7 +19,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Iterator, Optional
 
-RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+T\d+)\..*').match
+RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+T\d+)-light\..*').match
 
 
 def counter(start: int = 1) -> Iterator[str]:
@@ -39,7 +39,7 @@ def parse_date(name: str) -> Optional[datetime]:
 
 def select_files(source_dir: Path, workdir: Path,  start_date: datetime):
   count = counter()
-  for fullname in sorted(source_dir.glob('dxcc-*.png')):
+  for fullname in sorted(source_dir.glob('dxcc-*light.png')):
     file_date = parse_date(fullname.name)
     if file_date and file_date > start_date:
       target = workdir.joinpath(f'dxcc-{next(count)}.png')
