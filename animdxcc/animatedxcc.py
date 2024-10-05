@@ -19,7 +19,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Iterator, Optional
 
-RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+T\d+)-light\..*').match
+RE_DATE = re.compile(r'^dxcc.*-\w+-(\d+T\d+)-.*').match
 
 
 def counter(start: int = 1) -> Iterator[str]:
@@ -37,9 +37,9 @@ def parse_date(name: str) -> Optional[datetime]:
   return date.replace(tzinfo=timezone.utc)
 
 
-def select_files(source_dir: Path, workdir: Path,  start_date: datetime):
+def select_files(source_dir: Path, style: str, workdir: Path,  start_date: datetime) -> None:
   count = counter()
-  for fullname in sorted(source_dir.glob('dxcc-*light.png')):
+  for fullname in sorted(source_dir.glob(f'dxcc-*{style}.png')):
     file_date = parse_date(fullname.name)
     if file_date and file_date > start_date:
       target = workdir.joinpath(f'dxcc-{next(count)}.png')
@@ -58,7 +58,6 @@ def cleanup(workdir: Path) -> None:
 
 def mk_workdir(source: Path) -> Path:
   workdir = source.joinpath('_workdir')
-  atexit.register(cleanup, workdir)
   workdir.mkdir()
   return workdir
 
@@ -92,11 +91,11 @@ def mk_video(workdir: Path, video_file: Path) -> None:
     tmp_file.rename(video_file)
 
 
-def type_path(arg: str) -> Path:
-  path = Path(arg)
-  if not path.is_dir():
-    raise argparse.ArgumentTypeError(f'Error reading the directory {arg}')
-  return path
+def mk_link(src, dst):
+  if dst.exists():
+    dst.unlink()
+  os.link(src, dst)
+  logging.info('Link %s ->  %s', src, dst)
 
 
 def main():
@@ -116,9 +115,9 @@ def main():
                       help="ITU Zone numbers")
   parser.add_argument('-H', '--hours', default=120, type=int,
                       help='Number of hours to animate [Default: %(default)s]')
-  parser.add_argument('-s', '--source', default='/var/tmp/DXCC', type=type_path,
+  parser.add_argument('-s', '--source', default='/var/tmp/DXCC', type=Path,
                       help='Directory where the images are located')
-  parser.add_argument('-v', '--video-dir', default='/tmp', type=type_path,
+  parser.add_argument('-v', '--video-dir', default='/tmp', type=Path,
                       help='Directory to store the videos')
   opts = parser.parse_args()
 
@@ -136,15 +135,21 @@ def main():
       zone_name = str(zone_name)
       logging.info("Processing: %s %s, %d hours", zone_type, zone_name, opts.hours)
       source_dir = opts.source.joinpath(zone_type, zone_name)
-      video_file = opts.video_dir.joinpath(f'dxcc-{zone_name}.mp4')
-      try:
-        work_dir = mk_workdir(source_dir)
-        select_files(source_dir, work_dir, start_date)
-      except IOError as err:
-        logging.error(err)
-        raise SystemExit('Error') from None
-      mk_video(work_dir, video_file)
-      cleanup(work_dir)
+      for style in ('dark', 'light'):
+        video_file = opts.video_dir.joinpath(f'dxcc-{zone_name}-{style}.mp4')
+        try:
+          work_dir = mk_workdir(source_dir)
+          atexit.register(cleanup, work_dir)
+          select_files(source_dir, style, work_dir, start_date)
+        except IOError as err:
+          logging.error(err)
+          raise SystemExit('Error') from None
+        finally:
+          mk_video(work_dir, video_file)
+          atexit.register(cleanup, work_dir)
+          cleanup(work_dir)
+          if style == 'light':
+            mk_link(video_file, opts.video_dir.joinpath(f'dxcc-{zone_name}.mp4'))
 
 
 if __name__ == "__main__":
