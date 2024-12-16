@@ -21,8 +21,13 @@ OUTPUT_SIZE = (360, 240)
 
 RESAMPLING = Image.Resampling.LANCZOS
 
+COLORS = {
+  'dark': {'background': '#0c0c0c', 'foreground': '#eeeeee', },
+  'light': {'background': '#ffffff', 'foreground': '#000000', },
+}
 
-def mk_overlay(image, day):
+
+def mk_overlay(image, day, style):
   fontpath = files('animdxcc')
   font_t_path = fontpath.joinpath('JetBrainsMono-Bold.ttf')
   font_f_path = fontpath.joinpath('JetBrainsMono-MediumItalic.ttf')
@@ -37,16 +42,16 @@ def mk_overlay(image, day):
   overlay = Image.new('RGBA', (width, height))
   textbox = ImageDraw.Draw(overlay)
   wpos = textbox.textlength(title, font=font_t)
-  textbox.text(((width - wpos)/2, 10), title, fill='#000044', font=font_t)
-  textbox.text((10,  (height - FOOTER/1.5)), author, fill='#000000', font=font_f)
+  textbox.text(((width - wpos)/2, 10), title, fill=COLORS[style]['foreground'], font=font_t)
+  textbox.text((10,  (height - FOOTER/1.5)), author, fill=COLORS[style]['foreground'], font=font_f)
   return overlay
 
 
-def stitch_thumbnails(thumbnails, cols, rows, output_size, day):
+def stitch_thumbnails(thumbnails, cols, rows, output_size, day, style):
   total_width = cols * output_size[0]
   total_height = rows * output_size[1] + OFFSET + FOOTER
 
-  canvas = Image.new('RGBA', (total_width, total_height), color='#ffffff')
+  canvas = Image.new('RGBA', (total_width, total_height), color=COLORS[style]['background'])
 
   for i, j in product(range(rows), range(cols)):
     index = i * cols + j
@@ -56,7 +61,7 @@ def stitch_thumbnails(thumbnails, cols, rows, output_size, day):
     thumbnail = thumbnail.resize(output_size, RESAMPLING)
     canvas.paste(thumbnail, (j * output_size[0], i * output_size[1] + OFFSET))
 
-  canvas = Image.alpha_composite(canvas, mk_overlay(canvas, day))
+  canvas = Image.alpha_composite(canvas, mk_overlay(canvas, day, style))
   canvas = canvas.convert("RGB")
   return canvas
 
@@ -70,14 +75,14 @@ def add_margin(image, left=40, top=50, color='#ffffff'):
   return result
 
 
-def mk_thumbnails(path, workdir, size, day):
+def mk_thumbnails(path, workdir, size, day, style):
   # We only use the top of the hour files
   if not day:
     day = (date.today() - timedelta(days=1)).strftime('%Y%m%d')
   else:
     day = day.strftime('%Y%m%d')
 
-  _re = re.compile(rf'dxcc-.*-({day}+T\d+0000).png')
+  _re = re.compile(rf'dxcc-.*-({day}+T\d+0000)-{style}.png')
   thumbnail_names = []
   for fname in path.iterdir():
     if not _re.match(fname.name):
@@ -135,7 +140,7 @@ def main():
 
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
-  parser.add_argument('-o', '--output-name', nargs='*', default=['canvas.png'], type=Path,
+  parser.add_argument('-o', '--output-name', nargs='*', default='canvas', type=Path,
                       help='Output image name (without the extension) [default: %(default)s]')
   parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
                       help='Number of columns [default: %(default)d]')
@@ -147,6 +152,8 @@ def main():
                       help='Directory containing the propagation graphs images')
   parser.add_argument('-d', '--day', default='yesterday', type=type_day,
                       help='Date format is "YYYYMMDD" as well as "today" or "yesterday"')
+  parser.add_argument('-s', '--style', required=True, choices=('dark', 'light'),
+                      help='Output style')
   opts = parser.parse_args()
 
   if not opts.path.exists():
@@ -155,15 +162,15 @@ def main():
 
   workdir = mk_workdir(opts.path)
   atexit.register(cleanup, workdir)
-  thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day)
-  thumbnails.sort()
-  canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day)
-  for canvas_name in (opts.path.joinpath(f) for f in opts.output_name):
-    try:
-      canvas.save(canvas_name, quality=100)
-      logging.info(canvas_name)
-    except ValueError as err:
-      logging.error(err)
+  thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day, opts.style)
+  canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day,
+                             opts.style)
+  canvas_name = opts.path.joinpath(f'{opts.output_name}-{opts.style}.png')
+  try:
+    canvas.save(canvas_name, quality=100)
+    logging.info(canvas_name)
+  except ValueError as err:
+    logging.error(err)
 
 
 if __name__ == '__main__':
