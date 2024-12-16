@@ -67,7 +67,7 @@ def mk_overlay(image: Image.Image, day: date, style: str) -> Image.Image:
 
 def stitch_thumbnails(thumbnails: List[Path], cols: int, rows: int,
                       output_size: Tuple[int, int], day: date, style: str) -> Image.Image:
-  size = (output_size[0], output_size[1])
+  size = (int(output_size[0]), int(output_size[1]))
   total_width = cols * size[0]
   total_height = rows * size[1] + OFFSET + FOOTER
 
