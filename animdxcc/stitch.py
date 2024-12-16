@@ -6,10 +6,12 @@ import atexit
 import logging
 import os
 import re
+import shutil
 from datetime import date, datetime, timedelta
 from importlib.resources import files
 from itertools import product
 from pathlib import Path
+from typing import Optional, Type
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -25,6 +27,23 @@ COLORS = {
   'dark': {'background': '#0c0c0c', 'foreground': '#eeeeee', },
   'light': {'background': '#ffffff', 'foreground': '#000000', },
 }
+
+
+class Workdir:
+  def __init__(self, source: Path) -> None:
+    self.workdir = source.joinpath('_workdir')
+
+  def __enter__(self) -> Path:
+    try:
+      self.workdir.mkdir()
+      return self.workdir
+    except IOError as err:
+      raise err
+
+  def __exit__(self, exc_type: Optional[Type[BaseException]],
+               exc_value: Optional[BaseException],
+               traceback: Optional[Type[BaseException]]) -> None:
+    shutil.rmtree(self.workdir)
 
 
 def mk_overlay(image, day, style):
@@ -64,6 +83,13 @@ def stitch_thumbnails(thumbnails, cols, rows, output_size, day, style):
   canvas = Image.alpha_composite(canvas, mk_overlay(canvas, day, style))
   canvas = canvas.convert("RGB")
   return canvas
+
+
+def create_link(filename, target):
+  if os.path.exists(target):
+    os.unlink(target)
+  os.link(filename, target)
+  logging.info('Link to "%s" created', target)
 
 
 def add_margin(image, left=40, top=50, color='#ffffff'):
@@ -140,7 +166,7 @@ def main():
 
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
-  parser.add_argument('-o', '--output-name', nargs='*', default='canvas', type=Path,
+  parser.add_argument('-o', '--output-name', default='canvas',
                       help='Output image name (without the extension) [default: %(default)s]')
   parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
                       help='Number of columns [default: %(default)d]')
@@ -165,10 +191,15 @@ def main():
   thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day, opts.style)
   canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day,
                              opts.style)
-  canvas_name = opts.path.joinpath(f'{opts.output_name}-{opts.style}.png')
   try:
+    canvas_name = opts.path.joinpath(f'{opts.output_name}-{opts.style}.png')
     canvas.save(canvas_name, quality=100)
-    logging.info(canvas_name)
+    logging.info('%s saved', canvas_name)
+    if opts.style == 'light':
+      old_name = opts.path.joinpath(f'{opts.output_name}.png')
+      create_link(canvas_name, old_name)
+      logging.info('%s saved', old_name)
+
   except ValueError as err:
     logging.error(err)
 
