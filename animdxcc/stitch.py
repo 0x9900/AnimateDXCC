@@ -2,21 +2,21 @@
 # This is just an experiment.
 
 import argparse
-import atexit
 import logging
 import os
 import re
+import shutil
 from datetime import date, datetime, timedelta
 from importlib.resources import files
 from itertools import product
 from pathlib import Path
+from typing import List, Optional, Tuple, Type
 
 from PIL import Image, ImageDraw, ImageFont
 
 OFFSET = 40
 FOOTER = 40
-COLUMNS = 4
-ROWS = 6
+GRID_SIZE = (4, 6)
 OUTPUT_SIZE = (360, 240)
 
 RESAMPLING = Image.Resampling.LANCZOS
@@ -27,13 +27,30 @@ COLORS = {
 }
 
 
-def mk_overlay(image, day, style):
+class Workdir:
+  def __init__(self, source: Path) -> None:
+    self.workdir = source.joinpath('_workdir')
+
+  def __enter__(self) -> Path:
+    try:
+      self.workdir.mkdir()
+      return self.workdir
+    except IOError as err:
+      raise err
+
+  def __exit__(self, exc_type: Optional[Type[BaseException]],
+               exc_value: Optional[BaseException],
+               traceback: Optional[Type[BaseException]]) -> None:
+    shutil.rmtree(self.workdir)
+
+
+def mk_overlay(image: Image.Image, day: date, style: str) -> Image.Image:
   fontpath = files('animdxcc')
   font_t_path = fontpath.joinpath('JetBrainsMono-Bold.ttf')
   font_f_path = fontpath.joinpath('JetBrainsMono-MediumItalic.ttf')
 
-  font_t = ImageFont.truetype(font_t_path.open('rb'), 18)
-  font_f = ImageFont.truetype(font_f_path.open('rb'), 12)
+  font_t = ImageFont.truetype(str(font_t_path), 18)
+  font_f = ImageFont.truetype(str(font_f_path), 12)
 
   title = f'Hourly overview of HF propagation for {day}'
   author = f'(c){day.year} W6BSD https://bsdworld.org/'
@@ -47,42 +64,43 @@ def mk_overlay(image, day, style):
   return overlay
 
 
-def stitch_thumbnails(thumbnails, cols, rows, output_size, day, style):
-  total_width = cols * output_size[0]
-  total_height = rows * output_size[1] + OFFSET + FOOTER
+def stitch_thumbnails(thumbnails: List[Path], grid_size: Tuple[int, int],
+                      output_size: Tuple[int, int], day: date, style: str) -> Image.Image:
+  size = (int(output_size[0]), int(output_size[1]))
+  total_width = grid_size[0] * size[0]
+  total_height = grid_size[1] * size[1] + OFFSET + FOOTER
 
   canvas = Image.new('RGBA', (total_width, total_height), color=COLORS[style]['background'])
 
-  for i, j in product(range(rows), range(cols)):
-    index = i * cols + j
+  for i, j in product(range(grid_size[1]), range(grid_size[0])):
+    index = i * grid_size[0] + j
     if index >= len(thumbnails):
       break
-    thumbnail = Image.open(thumbnails[index])
-    thumbnail = thumbnail.resize(output_size, RESAMPLING)
-    canvas.paste(thumbnail, (j * output_size[0], i * output_size[1] + OFFSET))
+    thumbnail: Image.Image = Image.open(thumbnails[index])
+    thumbnail = thumbnail.resize(size, RESAMPLING)
+    canvas.paste(thumbnail, (j * size[0], i * size[1] + OFFSET))
 
   canvas = Image.alpha_composite(canvas, mk_overlay(canvas, day, style))
   canvas = canvas.convert("RGB")
   return canvas
 
 
-def add_margin(image, left=40, top=50, color='#ffffff'):
-  width, height = image.size
-  new_width = width + (left * 2)
-  new_height = height + (top * 2)
-  result = Image.new(image.mode, (new_width, new_height), color)
-  result.paste(image, (left, top))
-  return result
+def create_link(filename: Path, target: Path) -> None:
+  if target.exists():
+    target.unlink()
+  target.hardlink_to(filename)
+  logging.info('Link to "%s" created', target)
 
 
-def mk_thumbnails(path, workdir, size, day, style):
+def mk_thumbnails(path: Path, workdir: Path, size: Tuple[float, float],
+                  day: date, style: str) -> list[Path]:
   # We only use the top of the hour files
   if not day:
-    day = (date.today() - timedelta(days=1)).strftime('%Y%m%d')
+    str_day = (date.today() - timedelta(days=1)).strftime('%Y%m%d')
   else:
-    day = day.strftime('%Y%m%d')
+    str_day = day.strftime('%Y%m%d')
 
-  _re = re.compile(rf'dxcc-.*-({day}+T\d+0000)-{style}.png')
+  _re = re.compile(rf'dxcc-.*-({str_day}+T\d+0000)-{style}.png')
   thumbnail_names = []
   for fname in path.iterdir():
     if not _re.match(fname.name):
@@ -97,31 +115,22 @@ def mk_thumbnails(path, workdir, size, day, style):
   return sorted(thumbnail_names)
 
 
-def cleanup(path):
-  for fname in path.iterdir():
-    fname.unlink()
-  path.rmdir()
-  logging.info('Working directory "%s" removed', path)
-
-
-def mk_workdir(path):
-  workdir = path.joinpath('-workdir')
-  workdir.mkdir()
-  logging.info('Work directory %s created', workdir)
-  return workdir
-
-
-def type_tns(parg):
+def type_tns(parg: str) -> Tuple[float, float]:
   size = []
   _size = parg.lower().split('x')
   for val in _size:
     if not val.isdigit():
       raise argparse.ArgumentTypeError
-    size.append(int(val))
-  return tuple(size)
+    size.append(float(val))
+  return size[0], size[1]
 
 
-def type_day(parg):
+def type_grid(parg: str) -> Tuple[int, int]:
+  values = type_tns(parg)
+  return int(values[0]), int(values[1])
+
+
+def type_day(parg: str) -> date:
   if parg.lower() == 'today':
     day = date.today()
   elif parg.lower() == 'yesterday':
@@ -131,7 +140,19 @@ def type_day(parg):
   return day
 
 
-def main():
+def save_canvas(canvas: Image.Image, path: Path, style: str, name: str) -> None:
+  try:
+    canvas_name = path.joinpath(f'{name}-{style}.png')
+    canvas.save(canvas_name, quality=100)
+    logging.info('Save to "%s"', canvas_name)
+    if style == 'light':
+      old_name = path.joinpath(f'{name}.png')
+      create_link(canvas_name, old_name)
+  except ValueError as err:
+    logging.error(err)
+
+
+def main() -> None:
   logging.basicConfig(
     format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
     level=logging.getLevelName(os.getenv('LOG_LEVEL', 'INFO')),
@@ -139,38 +160,31 @@ def main():
   logging.getLogger('PIL').setLevel(logging.INFO)
 
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
+  default_grid = 'x'.join(str(x) for x in GRID_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
-  parser.add_argument('-o', '--output-name', nargs='*', default='canvas', type=Path,
+  parser.add_argument('-o', '--output-name', default='canvas',
                       help='Output image name (without the extension) [default: %(default)s]')
-  parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
-                      help='Number of columns [default: %(default)d]')
-  parser.add_argument('-r', '--rows', type=int, default=ROWS,
-                      help='Numer of rows [default %(default)d]')
+  parser.add_argument('-g', '--grid-size', type=type_grid, default=default_grid,
+                      help='Grid size (columns x rows) [default %(default)s]')
   parser.add_argument('-S', '--thumbnails-size', type=type_tns, default=default_size,
                       help='Thumbnails size width x height [default %(default)r]')
   parser.add_argument('-p', '--path', required=True, type=Path,
                       help='Directory containing the propagation graphs images')
   parser.add_argument('-d', '--day', default='yesterday', type=type_day,
                       help='Date format is "YYYYMMDD" as well as "today" or "yesterday"')
-  parser.add_argument('-s', '--style', required=True, choices=('dark', 'light'),
-                      help='Output style')
+  parser.add_argument('-s', '--style', nargs='*', choices=('dark', 'light'),
+                      default=['dark', 'light'], help='Output style')
   opts = parser.parse_args()
 
   if not opts.path.exists():
     logging.error('%s Not Found', opts.path)
     raise SystemExit('Path ERROR')
 
-  workdir = mk_workdir(opts.path)
-  atexit.register(cleanup, workdir)
-  thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day, opts.style)
-  canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size, opts.day,
-                             opts.style)
-  canvas_name = opts.path.joinpath(f'{opts.output_name}-{opts.style}.png')
-  try:
-    canvas.save(canvas_name, quality=100)
-    logging.info(canvas_name)
-  except ValueError as err:
-    logging.error(err)
+  with Workdir(opts.path) as workdir:
+    for style in opts.style:
+      thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day, style)
+      canvas = stitch_thumbnails(thumbnails, opts.grid_size, opts.thumbnails_size, opts.day, style)
+      save_canvas(canvas, opts.path, style, opts.output_name)
 
 
 if __name__ == '__main__':
