@@ -16,8 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 OFFSET = 40
 FOOTER = 40
-COLUMNS = 4
-ROWS = 6
+GRID_SIZE = (4, 6)
 OUTPUT_SIZE = (360, 240)
 
 RESAMPLING = Image.Resampling.LANCZOS
@@ -65,16 +64,16 @@ def mk_overlay(image: Image.Image, day: date, style: str) -> Image.Image:
   return overlay
 
 
-def stitch_thumbnails(thumbnails: List[Path], cols: int, rows: int,
+def stitch_thumbnails(thumbnails: List[Path], grid_size: Tuple[int, int],
                       output_size: Tuple[int, int], day: date, style: str) -> Image.Image:
   size = (int(output_size[0]), int(output_size[1]))
-  total_width = cols * size[0]
-  total_height = rows * size[1] + OFFSET + FOOTER
+  total_width = grid_size[0] * size[0]
+  total_height = grid_size[1] * size[1] + OFFSET + FOOTER
 
   canvas = Image.new('RGBA', (total_width, total_height), color=COLORS[style]['background'])
 
-  for i, j in product(range(rows), range(cols)):
-    index = i * cols + j
+  for i, j in product(range(grid_size[1]), range(grid_size[0])):
+    index = i * grid_size[0] + j
     if index >= len(thumbnails):
       break
     thumbnail: Image.Image = Image.open(thumbnails[index])
@@ -126,6 +125,11 @@ def type_tns(parg: str) -> Tuple[float, float]:
   return size[0], size[1]
 
 
+def type_grid(parg: str) -> Tuple[int, int]:
+  values = type_tns(parg)
+  return int(values[0]), int(values[1])
+
+
 def type_day(parg: str) -> date:
   if parg.lower() == 'today':
     day = date.today()
@@ -136,6 +140,18 @@ def type_day(parg: str) -> date:
   return day
 
 
+def save_canvas(canvas: Image.Image, path: Path, style: str, name: str) -> None:
+  try:
+    canvas_name = path.joinpath(f'{name}-{style}.png')
+    canvas.save(canvas_name, quality=100)
+    logging.info('Save to "%s"', canvas_name)
+    if style == 'light':
+      old_name = path.joinpath(f'{name}.png')
+      create_link(canvas_name, old_name)
+  except ValueError as err:
+    logging.error(err)
+
+
 def main() -> None:
   logging.basicConfig(
     format='%(asctime)s %(name)s:%(lineno)3d %(levelname)s - %(message)s', datefmt='%x %X',
@@ -144,13 +160,12 @@ def main() -> None:
   logging.getLogger('PIL').setLevel(logging.INFO)
 
   default_size = 'x'.join(str(x) for x in OUTPUT_SIZE)
+  default_grid = 'x'.join(str(x) for x in GRID_SIZE)
   parser = argparse.ArgumentParser(description='Stitch propagation graphs into a canvas')
   parser.add_argument('-o', '--output-name', default='canvas',
                       help='Output image name (without the extension) [default: %(default)s]')
-  parser.add_argument('-c', '--columns', type=int, default=COLUMNS,
-                      help='Number of columns [default: %(default)d]')
-  parser.add_argument('-r', '--rows', type=int, default=ROWS,
-                      help='Numer of rows [default %(default)d]')
+  parser.add_argument('-g', '--grid-size', type=type_grid, default=default_grid,
+                      help='Grid size (columns x rows) [default %(default)s]')
   parser.add_argument('-S', '--thumbnails-size', type=type_tns, default=default_size,
                       help='Thumbnails size width x height [default %(default)r]')
   parser.add_argument('-p', '--path', required=True, type=Path,
@@ -168,18 +183,8 @@ def main() -> None:
   with Workdir(opts.path) as workdir:
     for style in opts.style:
       thumbnails = mk_thumbnails(opts.path, workdir, opts.thumbnails_size, opts.day, style)
-      canvas = stitch_thumbnails(thumbnails, opts.columns, opts.rows, opts.thumbnails_size,
-                                 opts.day, style)
-      try:
-        canvas_name = opts.path.joinpath(f'{opts.output_name}-{style}.png')
-        canvas.save(canvas_name, quality=100)
-        logging.info('Save to "%s"', canvas_name)
-        if style == 'light':
-          old_name = opts.path.joinpath(f'{opts.output_name}.png')
-          create_link(canvas_name, old_name)
-
-      except ValueError as err:
-        logging.error(err)
+      canvas = stitch_thumbnails(thumbnails, opts.grid_size, opts.thumbnails_size, opts.day, style)
+      save_canvas(canvas, opts.path, style, opts.output_name)
 
 
 if __name__ == '__main__':
